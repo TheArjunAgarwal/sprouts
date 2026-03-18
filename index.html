@@ -527,6 +527,10 @@
   .attribution a:hover {
     text-decoration: underline;
   }
+  .joker-img {
+  width: 60px;   /* adjust as needed */
+  height: auto;
+}
 </style>
 </head>
 <body>
@@ -537,7 +541,9 @@
 </header>
 
 <div id="start-screen">
-  <div class="start-icon">🃏</div>
+  <div class="start-icon">
+    <img src="back.png" alt="Back" class="joker-img">
+  </div>
   <p class="start-desc">Twenty-six cards laid between you. Take from either end, one at a time. The higher sum wins.</p>
   <div class="rules-box">
     <h3>THE RULES</h3>
@@ -550,7 +556,6 @@
   </div>
   <button class="btn btn-primary" onclick="startGame()">DEAL THE CARDS</button>
 </div>
-
 <div id="game-screen">
   <div class="arena">
 
