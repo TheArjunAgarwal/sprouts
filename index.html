@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Card Duel</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'm6x11';
+    src: url('m6x11plus.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  :root {
+    --felt: #141414;
+    --felt-light: #73CCA8;
+    --felt-dark: #469374;
+    --gold: #EA9701;
+    --gold-light: #FDA301;
+    --gold-dim: #C98101;
+    --cream: #ffffff;
+    --cream-dim: #fdfdfd;
+    --p1: #009CFD;
+    --p1-light: #3CB4FF;
+    --p2: #FD5F54;
+    --p2-light: #FE968F;
+    --shadow: #4F6367;
+    --card-w: 80px;
+    --card-h: 112px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* Pixel-perfect rendering for m6x11 */
+  .title, .btn, .sb-name, .sb-score, .turn-label, .turn-name,
+  .cards-label, .coll-label, .rules-box h3, .result-title, .res-score-name,
+  #strategy-banner, .result-emoji {
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: unset;
+    image-rendering: pixelated;
+  }
+
+  body {
+    background: var(--felt-dark);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--cream);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 60%),
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 40px,
+        rgba(255,255,255,0.012) 40px,
+        rgba(255,255,255,0.012) 41px
+      );
+  }
+
+  /* ── Header ── */
+  header {
+    width: 100%;
+    text-align: center;
+    padding: 28px 20px 16px;
+    position: relative;
+  }
+  header::after {
+    content: '';
+    display: block;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin-top: 16px;
+  }
+  .title {
+    font-family: 'm6x11', monospace;
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: normal;
+    letter-spacing: 0.04em;
+    color: var(--gold-light);
+    text-shadow: 0 0 40px rgba(201,168,76,0.4), 0 2px 8px rgba(0,0,0,0.8);
+  }
+  .subtitle {
+    font-family: 'DM Sans', sans-serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--cream-dim);
+    margin-top: 4px;
+    letter-spacing: 0.01em;
+  }
+
+  /* ── Strategy Banner ── */
+  #strategy-banner {
+    display: none;
+    margin: 12px auto 0;
+    max-width: 560px;
+    padding: 14px 28px;
+    border: 1px solid var(--gold-dim);
+    border-radius: 4px;
+    background: rgba(0,0,0,0.35);
+    font-family: 'm6x11', monospace;
+    font-size: 1.2rem;
+    letter-spacing: 0.02em;
+    text-align: center;
+    color: var(--gold-light);
+    text-shadow: 0 0 20px rgba(201,168,76,0.3);
+  }
+  #strategy-banner.show { display: block; animation: fadeIn 0.8s ease; }
+
+  /* ── Scoreboards ── */
+  .arena {
+    width: 100%;
+    padding: 0 16px;
+  }
+
+  .scoreboards {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 12px;
+    margin: 20px 0 16px;
+  }
+  .scoreboard {
+    flex: 1;
+    border-radius: 6px;
+    padding: 14px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.3s;
+  }
+  .scoreboard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.08;
+    background: repeating-linear-gradient(
+      -45deg, transparent, transparent 8px,
+      rgba(255,255,255,0.5) 8px, rgba(255,255,255,0.5) 9px
+    );
+  }
+  .scoreboard.p1 {
+    background: linear-gradient(135deg, rgba(58,123,213,0.25), rgba(58,123,213,0.1));
+    border: 1px solid rgba(90,155,245,0.4);
+  }
+  .scoreboard.p2 {
+    background: linear-gradient(135deg, rgba(192,57,43,0.25), rgba(192,57,43,0.1));
+    border: 1px solid rgba(224,85,69,0.4);
+  }
+  .scoreboard.active-turn {
+    box-shadow: 0 0 0 2px var(--gold), 0 0 24px rgba(201,168,76,0.3);
+  }
+  .sb-name {
+    font-family: 'm6x11', monospace;
+    font-size: 1.1rem;
+    font-weight: normal;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .scoreboard.p1 .sb-name { color: var(--p1-light); }
+  .scoreboard.p2 .sb-name { color: var(--p2-light); }
+  .sb-score {
+    font-family: 'm6x11', monospace;
+    font-size: 2.6rem;
+    font-weight: normal;
+    line-height: 1;
+    color: var(--cream);
+  }
+  .sb-cards {
+    font-size: 0.85rem;
+    color: var(--cream-dim);
+    margin-top: 4px;
+  }
+  .turn-indicator {
+    text-align: center;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 8px;
+  }
+  .turn-label {
+    font-family: 'm6x11', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+  }
+  .turn-name {
+    font-family: 'm6x11', monospace;
+    font-size: 1rem;
+    font-weight: normal;
+    color: var(--gold-light);
+    transition: all 0.3s;
+  }
+
+  /* ── Card Row ── */
+  .table-section {
+    background: var(--felt);
+    border-radius: 12px;
+    padding: 24px 16px;
+    border: 2px solid rgba(201,168,76,0.2);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.4), 0 8px 32px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  .table-section::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(201,168,76,0.08);
+    pointer-events: none;
+  }
+
+  .cards-label {
+    font-family: 'm6x11', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: rgba(201,168,76,0.5);
+    text-align: center;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+  }
+
+  .card-row-wrapper {
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--gold-dim) transparent;
+  }
+  .card-row-wrapper::-webkit-scrollbar { height: 4px; }
+  .card-row-wrapper::-webkit-scrollbar-track { background: transparent; }
+  .card-row-wrapper::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+
+  .card-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    min-width: max-content;
+    padding: 8px 4px;
+    align-items: center;
+  }
+
+  .card-slot {
+    position: relative;
+    width: var(--card-w);
+    height: var(--card-h);
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  .card-slot.end-card {
+    cursor: pointer;
+  }
+  .card-slot.end-card:hover .card-img {
+    transform: translateY(-10px) scale(1.06);
+    box-shadow: 0 16px 32px rgba(0,0,0,0.7), 0 0 20px var(--gold);
+  }
+  .card-slot.end-card::after {
+    content: '';
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'm6x11', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .card-slot.end-card:hover::after { opacity: 1; }
+
+  .card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    display: block;
+  }
+  .card-slot.taken .card-img {
+    opacity: 0;
+    transform: scale(0.5);
+    pointer-events: none;
+  }
+
+  /* end-card highlight ring */
+  .card-slot.end-card .card-img {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 0 2px var(--gold);
+  }
+
+  /* ── Collected Cards ── */
+  .collections {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .collection {
+    flex: 1;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .coll-label {
+    font-family: 'm6x11', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+  }
+  .collection.p1 .coll-label { color: var(--p1-light); }
+  .collection.p2 .coll-label { color: var(--p2-light); }
+  .coll-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 36px;
+  }
+  .mini-card {
+    width: 30px;
+    height: 42px;
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .mini-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  /* ── Buttons ── */
+  .btn-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  .btn {
+    font-family: 'm6x11', monospace;
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    padding: 12px 32px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.1);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .btn:hover::after { opacity: 1; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold), #a07828);
+    color: #1a1000;
+    box-shadow: 0 4px 16px rgba(201,168,76,0.3);
+  }
+  .btn-primary:hover { box-shadow: 0 6px 24px rgba(201,168,76,0.5); transform: translateY(-1px); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.07);
+    color: var(--cream-dim);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+
+  /* ── Start Screen ── */
+  #start-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 40px 20px 60px;
+    text-align: center;
+    max-width: 540px;
+  }
+  .start-icon {
+    font-size: 4rem;
+    filter: drop-shadow(0 0 20px rgba(201,168,76,0.5));
+  }
+  .start-desc {
+    font-size: 1.15rem;
+    line-height: 1.7;
+    color: var(--cream-dim);
+    font-style: italic;
+    max-width: 420px;
+  }
+  .rules-box {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 8px;
+    padding: 20px 28px;
+    text-align: left;
+    width: 100%;
+  }
+  .rules-box h3 {
+    font-family: 'm6x11', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    color: var(--gold-dim);
+    margin-bottom: 12px;
+  }
+  .rules-box ul {
+    list-style: none;
+    font-size: 0.95rem;
+    line-height: 1.9;
+    color: var(--cream-dim);
+  }
+  .rules-box ul li::before {
+    content: '♦ ';
+    color: var(--gold-dim);
+    font-size: 0.75rem;
+  }
+
+  /* ── Result Modal ── */
+  #result-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #result-overlay.show { display: flex; }
+  .result-box {
+    background: linear-gradient(160deg, #1a3020, #0f1f14);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 40px 60px;
+    text-align: center;
+    box-shadow: 0 0 80px rgba(201,168,76,0.2);
+    animation: resultPop 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    max-width: 460px;
+    width: 90%;
+  }
+  .result-emoji { font-size: 3.5rem; margin-bottom: 12px; }
+  .result-title {
+    font-family: 'm6x11', monospace;
+    font-size: 2.2rem;
+    font-weight: normal;
+    color: var(--gold-light);
+    text-shadow: 0 0 30px rgba(201,168,76,0.5);
+    margin-bottom: 8px;
+  }
+  .result-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--cream-dim);
+    margin-bottom: 20px;
+  }
+  .result-scores {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 28px;
+  }
+  .res-score { text-align: center; }
+  .res-score-name {
+    font-family: 'm6x11', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+  }
+  .res-score-name.p1 { color: var(--p1-light); }
+  .res-score-name.p2 { color: var(--p2-light); }
+  .res-score-val {
+    font-family: 'm6x11', monospace;
+    font-size: 2.4rem;
+    font-weight: normal;
+    color: var(--cream);
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.5); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes resultPop {
+    from { opacity: 0; transform: scale(0.7); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes dealIn {
+    from { opacity: 0; transform: translateY(-60px) rotate(-8deg); }
+    to { opacity: 1; transform: translateY(0) rotate(0); }
+  }
+  .deal-anim {
+    animation: dealIn 0.35s cubic-bezier(0.22,1,0.36,1) both;
+  }
+
+  #game-screen { display: none; width: 100%; }
+  #game-screen.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">GRABBING CARDS!</div>
+  <div id="strategy-banner"></div>
+</header>
+
+<!-- START SCREEN -->
+<div id="start-screen">
+  <div class="start-icon">🃏</div>
+  <p class="start-desc">Twenty-six cards laid between you. Take from either end, one at a time. The higher sum wins.</p>
+  <div class="rules-box">
+    <h3>THE RULES</h3>
+    <ul>
+      <li>26 cards are dealt faceup in a line</li>
+      <li>Players alternate picking from either end</li>
+      <li>Card values: Ace = 1, Numbers = face, J = 11, Q = 12, K = 13</li>
+      <li>Highest total when cards run out wins</li>
+    </ul>
+  </div>
+  <button class="btn btn-primary" onclick="startGame()">DEAL THE CARDS</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen">
+  <div class="arena">
+
+    <!-- Scoreboards -->
+    <div class="scoreboards">
+      <div class="scoreboard p1" id="sb-p1">
+        <div class="sb-name">PLAYER 1</div>
+        <div class="sb-score" id="score-p1">0</div>
+        <div class="sb-cards" id="cards-p1">0 cards</div>
+      </div>
+      <div class="turn-indicator">
+        <div class="turn-label">TURN</div>
+        <div class="turn-name" id="turn-name">Player 1</div>
+      </div>
+      <div class="scoreboard p2" id="sb-p2">
+        <div class="sb-name">PLAYER 2</div>
+        <div class="sb-score" id="score-p2">0</div>
+        <div class="sb-cards" id="cards-p2">0 cards</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-section">
+      <div class="cards-label">▸ TAKE FROM EITHER END ◂</div>
+      <div class="card-row-wrapper">
+        <div class="card-row" id="card-row"></div>
+      </div>
+    </div>
+
+    <!-- Collections -->
+    <div class="collections">
+      <div class="collection p1">
+        <div class="coll-label">PLAYER 1'S HAND</div>
+        <div class="coll-cards" id="coll-p1"></div>
+      </div>
+      <div class="collection p2">
+        <div class="coll-label">PLAYER 2'S HAND</div>
+        <div class="coll-cards" id="coll-p2"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="startGame()">NEW GAME</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT OVERLAY -->
+<div id="result-overlay">
+  <div class="result-box">
+    <div class="result-emoji" id="res-emoji">🏆</div>
+    <div class="result-title" id="res-title">Player 1 Wins!</div>
+    <div class="result-sub" id="res-sub"></div>
+    <div class="result-scores">
+      <div class="res-score">
+        <div class="res-score-name p1">PLAYER 1</div>
+        <div class="res-score-val" id="res-s1">0</div>
+      </div>
+      <div class="res-score">
+        <div class="res-score-name p2">PLAYER 2</div>
+        <div class="res-score-val" id="res-s2">0</div>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:0">
+      <button class="btn btn-primary" onclick="closeResult(); startGame()">PLAY AGAIN</button>
+      <button class="btn btn-secondary" onclick="closeResult()">VIEW BOARD</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Card Mapping ──────────────────────────────────────────────────────────────
+// Files: 1.png to 52.png
+// Order (standard): A♠ 2♠ ... K♠ A♥ ... K♥ A♦ ... K♦ A♣ ... K♣
+// File index 1-13 = Spades, 14-26 = Hearts, 27-39 = Diamonds, 40-52 = Clubs
+// Ace=1, 2-10=face, J=11, Q=12, K=13
+
+function cardValue(fileIndex) {
+  const rank = ((fileIndex - 1) % 13) + 1; // 1..13
+  return rank; // Ace=1, J=11, Q=12, K=13
+}
+
+// ── Game State ────────────────────────────────────────────────────────────────
+let line = [];       // array of fileIndex still on table
+let scores = [0, 0];
+let cardCounts = [0, 0];
+let currentPlayer = 0; // 0 or 1
+let collected = [[], []];
+let animating = false;
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function startGame() {
+  animating = false;
+  scores = [0, 0];
+  cardCounts = [0, 0];
+  currentPlayer = 0;
+  collected = [[], []];
+
+  // Build and shuffle deck
+  const deck = Array.from({length: 52}, (_, i) => i + 1);
+  shuffle(deck);
+  line = deck.slice(0, 26);
+
+  // Strategy hint
+  let oddSum = 0, evenSum = 0;
+  line.forEach((fi, idx) => {
+    if (idx % 2 === 0) evenSum += cardValue(fi);  // 0-indexed even = player 1 picks if starting
+    else oddSum += cardValue(fi);
+  });
+  // Player 1 picks indices 0,2,4,... (0-indexed even positions)
+  // If evenSum > oddSum, player 1 has a guaranteed winning strategy
+  const banner = document.getElementById('strategy-banner');
+  if (evenSum > oddSum) {
+    banner.textContent = '"Hope you all have fun!"';
+  } else {
+    banner.textContent = '"May the best win!"';
+  }
+  banner.className = 'show';
+
+  document.getElementById('start-screen').style.display = 'none';
+  const gs = document.getElementById('game-screen');
+  gs.style.display = 'block';
+  gs.classList.add('show');
+
+  renderAll();
+}
+
+function renderAll() {
+  renderCardRow();
+  renderScores();
+  renderCollections();
+  updateTurnUI();
+}
+
+function cardImgPath(fileIndex) {
+  return `cards/${fileIndex}.png`;
+}
+
+function renderCardRow() {
+  const row = document.getElementById('card-row');
+  row.innerHTML = '';
+  line.forEach((fi, idx) => {
+    const slot = document.createElement('div');
+    slot.className = 'card-slot';
+    const isEnd = idx === 0 || idx === line.length - 1;
+    if (isEnd) slot.classList.add('end-card');
+    slot.style.animationDelay = `${idx * 0.03}s`;
+
+    const img = document.createElement('img');
+    img.className = 'card-img deal-anim';
+    img.src = cardImgPath(fi);
+    img.alt = `Card ${fi}`;
+    img.style.animationDelay = `${idx * 0.025}s`;
+
+    if (isEnd) {
+      const which = idx === 0 ? 'left' : 'right';
+      slot.onclick = () => takeCard(which);
+      slot.title = `Take this card (value: ${cardValue(fi)})`;
+    }
+    slot.appendChild(img);
+    row.appendChild(slot);
+  });
+}
+
+function takeCard(side) {
+  if (animating || line.length === 0) return;
+  animating = true;
+
+  const idx = side === 'left' ? 0 : line.length - 1;
+  const fi = line[idx];
+  const val = cardValue(fi);
+
+  // Remove from line
+  if (side === 'left') line.shift(); else line.pop();
+
+  scores[currentPlayer] += val;
+  cardCounts[currentPlayer]++;
+  collected[currentPlayer].push(fi);
+
+  renderCardRow();
+  renderScores();
+  renderCollections();
+
+  if (line.length === 0) {
+    setTimeout(showResult, 700);
+    animating = false;
+    return;
+  }
+
+  currentPlayer = 1 - currentPlayer;
+  updateTurnUI();
+  setTimeout(() => { animating = false; }, 300);
+}
+
+function renderScores() {
+  document.getElementById('score-p1').textContent = scores[0];
+  document.getElementById('score-p2').textContent = scores[1];
+  document.getElementById('cards-p1').textContent = `${cardCounts[0]} card${cardCounts[0] !== 1 ? 's' : ''}`;
+  document.getElementById('cards-p2').textContent = `${cardCounts[1]} card${cardCounts[1] !== 1 ? 's' : ''}`;
+}
+
+function renderCollections() {
+  [0, 1].forEach(p => {
+    const el = document.getElementById(`coll-p${p+1}`);
+    el.innerHTML = '';
+    collected[p].forEach(fi => {
+      const mc = document.createElement('div');
+      mc.className = 'mini-card';
+      const img = document.createElement('img');
+      img.src = cardImgPath(fi);
+      img.alt = '';
+      mc.appendChild(img);
+      el.appendChild(mc);
+    });
+  });
+}
+
+function updateTurnUI() {
+  const name = currentPlayer === 0 ? 'Player 1' : 'Player 2';
+  document.getElementById('turn-name').textContent = name;
+  document.getElementById('sb-p1').classList.toggle('active-turn', currentPlayer === 0);
+  document.getElementById('sb-p2').classList.toggle('active-turn', currentPlayer === 1);
+}
+
+function showResult() {
+  const [s1, s2] = scores;
+  let emoji, title, sub;
+  if (s1 > s2) {
+    emoji = '🏆'; title = 'Player 1 Wins!';
+    sub = `A commanding victory by ${s1 - s2} points.`;
+  } else if (s2 > s1) {
+    emoji = '🏆'; title = 'Player 2 Wins!';
+    sub = `A decisive victory by ${s2 - s1} points.`;
+  } else {
+    emoji = '🤝'; title = "It's a Tie!";
+    sub = 'Perfectly matched — a rare and honourable draw.';
+  }
+  document.getElementById('res-emoji').textContent = emoji;
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-sub').textContent = sub;
+  document.getElementById('res-s1').textContent = s1;
+  document.getElementById('res-s2').textContent = s2;
+  document.getElementById('result-overlay').classList.add('show');
+}
+
+function closeResult() {
+  document.getElementById('result-overlay').classList.remove('show');
+}
+</script>
+</body>
+</html>
