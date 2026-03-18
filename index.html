@@ -509,6 +509,24 @@
 
   #game-screen { display: none; width: 100%; }
   #game-screen.show { display: block; }
+
+  /* ── Attribution Footer ── */
+  .attribution {
+    width: 100%;
+    text-align: center;
+    padding: 24px;
+    font-size: 0.8rem;
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.05em;
+  }
+  .attribution a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+  .attribution a:hover {
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
@@ -518,7 +536,6 @@
   <div id="strategy-banner"></div>
 </header>
 
-<!-- START SCREEN -->
 <div id="start-screen">
   <div class="start-icon">🃏</div>
   <p class="start-desc">Twenty-six cards laid between you. Take from either end, one at a time. The higher sum wins.</p>
@@ -534,11 +551,9 @@
   <button class="btn btn-primary" onclick="startGame()">DEAL THE CARDS</button>
 </div>
 
-<!-- GAME SCREEN -->
 <div id="game-screen">
   <div class="arena">
 
-    <!-- Scoreboards -->
     <div class="scoreboards">
       <div class="scoreboard p1" id="sb-p1">
         <div class="sb-name">PLAYER 1</div>
@@ -556,7 +571,6 @@
       </div>
     </div>
 
-    <!-- Table -->
     <div class="table-section">
       <div class="cards-label">▸ TAKE FROM EITHER END ◂</div>
       <div class="card-row-wrapper">
@@ -564,7 +578,6 @@
       </div>
     </div>
 
-    <!-- Collections -->
     <div class="collections">
       <div class="collection p1">
         <div class="coll-label">PLAYER 1'S HAND</div>
@@ -582,7 +595,6 @@
   </div>
 </div>
 
-<!-- RESULT OVERLAY -->
 <div id="result-overlay">
   <div class="result-box">
     <div class="result-emoji" id="res-emoji">🏆</div>
@@ -604,6 +616,11 @@
     </div>
   </div>
 </div>
+
+<footer class="attribution">
+  <p>The absolute gorgeous cards were assets by <a href="https://kerenel.itch.io/pixelart-cards" target="_blank">https://kerenel.itch.io/pixelart-cards</a></p>
+  <p>This website uses the beautiful M6x11 font, a font by <a href="https://managore.itch.io/">Daniel Linssen</a></p>
+</footer>
 
 <script>
 // ── Card Mapping ──────────────────────────────────────────────────────────────
